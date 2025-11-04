@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Losowanie Mikołajkowe</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #fafafa; margin: 2em; }
+  textarea, input { width: 100%; margin: 0.5em 0; padding: 0.5em; }
+  button { padding: 0.7em 1.5em; margin-top: 1em; cursor: pointer; }
+  .result a { display: block; margin: 0.3em 0; word-break: break-all; }
+</style>
+</head>
+<body>
+  <h2>Losowanie Mikołajkowe 🎅</h2>
+  <p>Podaj listę uczestników (po jednym w linii):</p>
+  <textarea id="uczestnicy" rows="6" placeholder="Jan Kowalski&#10;Anna Nowak&#10;Piotr Zieliński"></textarea>
+
+  <p>Zakazy w formacie: <code>Jan Kowalski: Anna Nowak, Piotr Zieliński</code></p>
+  <textarea id="zakazy" rows="4" placeholder="Jan Kowalski: Anna Nowak&#10;Kasia Wiśniewska: Piotr Zieliński"></textarea>
+
+  <button id="losuj">Wylosuj</button>
+
+  <div class="result" id="result"></div>
+
+<script>
+function parseZakazy(text) {
+  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+  const map = {};
+  for (const line of lines) {
+    const [osoba, reszta] = line.split(":").map(s => s.trim());
+    if (osoba && reszta) {
+      map[osoba] = reszta.split(",").map(s => s.trim());
+    }
+  }
+  return map;
+}
+
+function losuj(uczestnicy, zakazy, maxProb = 10000) {
+  for (let i = 0; i < maxProb; i++) {
+    const obdarowani = [...uczestnicy];
+    obdarowani.sort(() => Math.random() - 0.5);
+    const wynik = {};
+    let poprawne = true;
+
+    for (let j = 0; j < uczestnicy.length; j++) {
+      const osoba = uczestnicy[j];
+      const wylosowany = obdarowani[j];
+      if (osoba === wylosowany) { poprawne = false; break; }
+      if (zakazy[osoba]?.includes(wylosowany)) { poprawne = false; break; }
+      wynik[osoba] = wylosowany;
+    }
+
+    if (poprawne) return wynik;
+  }
+  return null;
+}
+
+function encodeBase64Unicode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach(b => binary += String.fromCharCode(b));
+  return btoa(binary);
+}
+
+document.getElementById("losuj").addEventListener("click", () => {
+  const uczestnicy = document.getElementById("uczestnicy").value
+    .split("\n").map(s => s.trim()).filter(Boolean);
+  const zakazy = parseZakazy(document.getElementById("zakazy").value);
+  const wynik = losuj(uczestnicy, zakazy);
+
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = "";
+
+  if (!wynik) {
+    resultDiv.innerHTML = "<p style='color:red'>Nie udało się znaleźć poprawnego losowania.</p>";
+    return;
+  }
+
+  resultDiv.innerHTML = "<h3>Wyniki (linki dla każdej osoby):</h3>";
+
+  for (const [osoba, wylosowany] of Object.entries(wynik)) {
+    const message = `Gratulacje ${osoba}!!!\nWylosowałaś/eś: ${wylosowany}. 🎁`;
+    const encoded = encodeBase64Unicode(message);
+    const link = `https://mwarzech2.github.io/Base64UrlDecoder/?data=${encoded}`;
+    const a = document.createElement("a");
+    a.href = link;
+    a.textContent = `${osoba} → ${link}`;
+    resultDiv.appendChild(a);
+  }
+});
+</script>
+</body>
+</html>
