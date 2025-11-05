@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Losowanie Mikołajkowe 🎅</title>
+<style>
+  body {
+    font-family: system-ui, sans-serif;
+    background: #fafafa;
+    text-align: center;
+    margin-top: 10vh;
+  }
+  h1 {
+    color: #d32f2f;
+    margin-bottom: 0.4em;
+  }
+  p {
+    font-size: 1.1em;
+  }
+  button {
+    font-size: 1.2em;
+    padding: 0.7em 2em;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    margin-top: 1.5em;
+  }
+  button:hover {
+    background: #b71c1c;
+    transform: scale(1.05);
+  }
+  #wynik {
+    margin-top: 2em;
+    font-size: 1.4em;
+    color: #2e7d32;
+    display: none;
+    white-space: pre-wrap;
+    opacity: 0;
+    transition: opacity 1s ease;
+  }
+</style>
+</head>
+<body>
+  <h1>Losowanie Mikołajkowe 🎅</h1>
+  <p id="przywitanie"></p>
+  <button id="losuj">Losuj 🎁</button>
+  <div id="wynik"></div>
+
+  <script>
+    // Pobranie parametrów z URL
+    const params = new URLSearchParams(window.location.search);
+    const base64Person = params.get("person");
+    const base64Data = params.get("data");
+
+    // Funkcja konwertująca Base64URL na zwykłe Base64
+    function normalizeBase64URL(str) {
+      if (!str) return "";
+      str = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (str.length % 4) str += "=";
+      return str;
+    }
+
+    // Dekodowanie tekstu UTF-8 z Base64
+    function decodeBase64Unicode(str) {
+      try {
+        const normalized = normalizeBase64URL(str);
+        const binary = atob(normalized);
+        const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+        const decoder = new TextDecoder("utf-8");
+        return decoder.decode(bytes);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    const osoba = decodeBase64Unicode(base64Person);
+    const tresc = decodeBase64Unicode(base64Data);
+
+    const przywitanie = document.getElementById("przywitanie");
+    const wynik = document.getElementById("wynik");
+    const btn = document.getElementById("losuj");
+
+    if (!osoba) {
+      przywitanie.textContent = "❌ Brak danych o osobie w linku!";
+      btn.style.display = "none";
+    } else {
+      przywitanie.innerHTML = `Cześć <b>${osoba}</b>!<br>Kliknij, aby odkryć kogo wylosowałeś/aś 🎄`;
+    }
+
+    btn.addEventListener("click", () => {
+      if (!tresc) {
+        wynik.style.display = "block";
+        wynik.style.color = "red";
+        wynik.textContent = "Błąd: brak treści losowania.";
+        return;
+      }
+      wynik.textContent = tresc;
+      wynik.style.display = "block";
+      setTimeout(() => wynik.style.opacity = 1, 10); // fade-in animacja
+      btn.style.display = "none";
+    });
+  </script>
+</body>
+</html>

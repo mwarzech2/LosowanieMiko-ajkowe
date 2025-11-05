@@ -2,12 +2,111 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
-<title>Losowanie Mikołajkowe</title>
+<title>Losowanie Mikołajkowe 🎅</title>
 <style>
-  body { font-family: system-ui, sans-serif; background: #fafafa; margin: 2em; }
-  textarea, input { width: 100%; margin: 0.5em 0; padding: 0.5em; }
-  button { padding: 0.7em 1.5em; margin-top: 1em; cursor: pointer; }
-  .result a { display: block; margin: 0.3em 0; word-break: break-all; }
+  body {
+    font-family: system-ui, sans-serif;
+    background: #fafafa;
+    margin: 2em;
+  }
+  textarea {
+    width: 100%;
+    margin: 0.5em 0;
+    padding: 0.5em;
+  }
+  input {
+    margin: 0.5em 0;
+    padding: 0.5em;
+  }
+  button {
+    padding: 0.7em 1.5em;
+    margin-top: 1em;
+    margin-bottom: 1em;
+    cursor: pointer;
+  }
+  .result a {
+    display: block;
+    margin: 0.3em 0;
+    word-break: break-all;
+  }
+  .exclusions {
+    margin-top: 1em;
+    padding: 1em;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  details {
+    margin: 0.4em 0;
+    background: #f0f0f0;
+    padding: 0.5em 0.8em;
+    border-radius: 5px;
+  }
+  summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 0.3em;
+  }
+  .checkbox-group {
+    display: block;
+    gap: 0.3em 1em;
+    margin-left: 1em;
+  }
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 0.95em;
+  }
+  
+  #result {
+    margin-top: 1.5em;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    gap: 10px;
+  }
+
+  .result-name {
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .result-link {
+    flex-grow: 1;
+    color: #1565c0;
+    text-decoration: none;
+    word-break: break-all;
+  }
+  .result-link:hover {
+    text-decoration: underline;
+  }
+
+  .copy-btn {
+    background: #f5f5f5;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .copy-btn:hover {
+    background: #e0e0e0;
+    transform: scale(1.03);
+  }
+  .copy-btn.copied {
+    background: #c8e6c9 !important;
+  }
 </style>
 </head>
 <body>
@@ -15,26 +114,14 @@
   <p>Podaj listę uczestników (po jednym w linii):</p>
   <textarea id="uczestnicy" rows="6" placeholder="Jan Kowalski&#10;Anna Nowak&#10;Piotr Zieliński"></textarea>
 
-  <p>Zakazy w formacie: <code>Jan Kowalski: Anna Nowak, Piotr Zieliński</code></p>
-  <textarea id="zakazy" rows="4" placeholder="Jan Kowalski: Anna Nowak&#10;Kasia Wiśniewska: Piotr Zieliński"></textarea>
+  <button id="generujZakazy">Generuj listę wykluczeń</button>
+  <div id="listaZakazow" class="exclusions"></div>
 
-  <button id="losuj">Wylosuj</button>
+  <button id="losuj" style="display:none;">Wylosuj</button>
 
   <div class="result" id="result"></div>
 
 <script>
-function parseZakazy(text) {
-  const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
-  const map = {};
-  for (const line of lines) {
-    const [osoba, reszta] = line.split(":").map(s => s.trim());
-    if (osoba && reszta) {
-      map[osoba] = reszta.split(",").map(s => s.trim());
-    }
-  }
-  return map;
-}
-
 function losuj(uczestnicy, zakazy, maxProb = 10000) {
   for (let i = 0; i < maxProb; i++) {
     const obdarowani = [...uczestnicy];
@@ -63,12 +150,58 @@ function encodeBase64Unicode(str) {
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+document.getElementById("generujZakazy").addEventListener("click", () => {
+  const uczestnicy = document.getElementById("uczestnicy").value
+    .split("\n").map(s => s.trim()).filter(Boolean);
+  const listaDiv = document.getElementById("listaZakazow");
+  listaDiv.innerHTML = "";
+
+  if (uczestnicy.length < 2) {
+    listaDiv.innerHTML = "<p style='color:red'>Podaj co najmniej dwie osoby.</p>";
+    return;
+  }
+
+  uczestnicy.forEach(osoba => {
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = osoba;
+    details.appendChild(summary);
+
+    const boxGroup = document.createElement("div");
+    boxGroup.className = "checkbox-group";
+
+    uczestnicy.filter(o => o !== osoba).forEach(innaOsoba => {
+      const label = document.createElement("label");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = innaOsoba;
+      label.appendChild(checkbox);
+      label.appendChild(document.createTextNode(innaOsoba));
+      boxGroup.appendChild(label);
+    });
+
+    details.appendChild(boxGroup);
+    listaDiv.appendChild(details);
+  });
+
+  document.getElementById("losuj").style.display = "inline-block";
+});
+
 document.getElementById("losuj").addEventListener("click", () => {
   const uczestnicy = document.getElementById("uczestnicy").value
     .split("\n").map(s => s.trim()).filter(Boolean);
-  const zakazy = parseZakazy(document.getElementById("zakazy").value);
-  const wynik = losuj(uczestnicy, zakazy);
+  
+  const zakazy = {};
+  document.querySelectorAll("#listaZakazow details").forEach(detail => {
+    const osoba = detail.querySelector("summary").textContent;
+    const wykluczeni = [];
+    detail.querySelectorAll("input[type='checkbox']:checked").forEach(chk => {
+      wykluczeni.push(chk.value);
+    });
+    zakazy[osoba] = wykluczeni;
+  });
 
+  const wynik = losuj(uczestnicy, zakazy);
   const resultDiv = document.getElementById("result");
   resultDiv.innerHTML = "";
 
@@ -78,15 +211,49 @@ document.getElementById("losuj").addEventListener("click", () => {
   }
 
   resultDiv.innerHTML = "<h3>Wyniki (linki dla każdej osoby):</h3>";
-
+  const baseUrl = window.location.origin + "/";
   for (const [osoba, wylosowany] of Object.entries(wynik)) {
-    const message = `Gratulacje ${osoba}!!!\nWylosowałaś/eś: ${wylosowany}. 🎁`;
+    const message = `W tym roku na Mikołajki wylosowałeś/aś: ${wylosowany} 🎁`;
+    const encoded_person = encodeBase64Unicode(osoba);
     const encoded = encodeBase64Unicode(message);
-    const link = `https://mwarzech2.github.io/Base64UrlDecoder/?data=${encoded}`;
+    const link = `losowanie/?person=${encoded_person}&data=${encoded}`;
+    const full_link = `${baseUrl}${link}`;
+    const row = document.createElement("div");
+    row.className = "result-row";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "result-name";
+    nameSpan.textContent = `${osoba} → `;
+
     const a = document.createElement("a");
+    a.className = "result-link";
     a.href = link;
-    a.textContent = `${osoba} → ${link}`;
-    resultDiv.appendChild(a);
+    a.textContent = full_link;
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "copy-btn";
+    copyBtn.textContent = "📋 Kopiuj";
+
+    // Obsługa kopiowania
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(full_link);
+        copyBtn.textContent = "✅ Skopiowano!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "📋 Kopiuj";
+          copyBtn.classList.remove("copied");
+        }, 1500);
+      } catch {
+        alert("Nie udało się skopiować linku 😢");
+      }
+    });
+
+    // Składanie elementów
+    row.appendChild(nameSpan);
+    row.appendChild(a);
+    row.appendChild(copyBtn);
+    resultDiv.appendChild(row);
   }
 });
 </script>
