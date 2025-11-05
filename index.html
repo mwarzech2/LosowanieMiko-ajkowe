@@ -211,7 +211,7 @@ document.getElementById("losuj").addEventListener("click", () => {
   }
 
   resultDiv.innerHTML = "<h3>Wyniki (linki dla każdej osoby):</h3>";
-  const baseUrl = window.location.origin + window.location.pathname;
+  const baseUrl = window.location.href;
   for (const [osoba, wylosowany] of Object.entries(wynik)) {
     const message = `W tym roku na Mikołajki wylosowałeś/aś: ${wylosowany} 🎁`;
     const encoded_person = encodeBase64Unicode(osoba);
