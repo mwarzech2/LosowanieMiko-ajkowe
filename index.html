@@ -211,12 +211,12 @@ document.getElementById("losuj").addEventListener("click", () => {
   }
 
   resultDiv.innerHTML = "<h3>Wyniki (linki dla każdej osoby):</h3>";
-  const baseUrl = window.location.origin + "/";
+  const baseUrl = window.location.origin + window.location.pathname;
   for (const [osoba, wylosowany] of Object.entries(wynik)) {
     const message = `W tym roku na Mikołajki wylosowałeś/aś: ${wylosowany} 🎁`;
     const encoded_person = encodeBase64Unicode(osoba);
     const encoded = encodeBase64Unicode(message);
-    const link = `losowanie/?person=${encoded_person}&data=${encoded}`;
+    const link = `losowanie?person=${encoded_person}&data=${encoded}`;
     const full_link = `${baseUrl}${link}`;
     const row = document.createElement("div");
     row.className = "result-row";
